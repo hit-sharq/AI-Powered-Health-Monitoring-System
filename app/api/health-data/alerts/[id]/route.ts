@@ -2,14 +2,16 @@ import { NextResponse } from "next/server"
 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   try {
-    const alertId = params.id
+    const { id } = params
 
-    // In a real application, this would delete from the database
-    // For now, we'll just simulate the deletion
+    // In a real application, you would delete the alert from your database
+    // For now, we'll simulate the deletion
+    console.log(`Deleting alert: ${id}`)
 
     return NextResponse.json({
       success: true,
-      alertId,
+      message: "Alert deleted successfully",
+      alertId: id,
       deletedAt: new Date().toISOString(),
     })
   } catch (error) {

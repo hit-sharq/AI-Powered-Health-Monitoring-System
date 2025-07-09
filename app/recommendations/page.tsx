@@ -30,7 +30,7 @@ export default function RecommendationsPage() {
     try {
       const response = await fetch("/api/health-data/recommendations")
       const data = await response.json()
-      setRecommendations(data.recommendations)
+      setRecommendations(data.recommendations || [])
     } catch (error) {
       console.error("Failed to fetch recommendations:", error)
     } finally {
@@ -102,6 +102,9 @@ export default function RecommendationsPage() {
           <div className="flex items-center gap-2">
             <Lightbulb className="h-5 w-5" />
             <h1 className="text-xl font-semibold">Health Recommendations</h1>
+            <Badge variant="outline" className="text-blue-600 border-blue-600">
+              AI-Powered
+            </Badge>
           </div>
           <Button variant="outline" size="sm" onClick={fetchRecommendations} disabled={isLoading}>
             <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -112,7 +115,7 @@ export default function RecommendationsPage() {
 
       <main className="flex-1 p-6 space-y-6">
         {/* Progress Overview */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Total Recommendations</CardTitle>
@@ -121,6 +124,18 @@ export default function RecommendationsPage() {
               <div className="text-2xl font-bold">{recommendations.length}</div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">High Priority</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">
+                {recommendations.filter((r) => r.priority === "high").length}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Completed</CardTitle>
@@ -129,6 +144,7 @@ export default function RecommendationsPage() {
               <div className="text-2xl font-bold text-green-600">{completedCount}</div>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>

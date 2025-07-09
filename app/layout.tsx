@@ -2,17 +2,18 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SidebarProvider } from "@/components/ui/sidebar"
+import { AppSidebar } from "@/components/app-sidebar"
 import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "HealthAI - Smart Health Monitoring System",
-  description: "AI-powered health monitoring system aligned with SDG 3 (Good Health and Well-being)",
+  title: "AI Health Monitor - SDG 3 Health & Well-being",
+  description:
+    "AI-powered health monitoring system for real-time health tracking, anomaly detection, and personalized recommendations",
+  keywords: ["health monitoring", "AI", "SDG 3", "health analytics", "wearable devices"],
     generator: 'v0.dev'
 }
 
@@ -26,8 +27,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>{children}</SidebarInset>
+            <div className="flex min-h-screen w-full">
+              <AppSidebar />
+              <main className="flex-1">{children}</main>
+            </div>
           </SidebarProvider>
           <Toaster />
         </ThemeProvider>

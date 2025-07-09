@@ -105,23 +105,22 @@ function generateRecommendations(data: any[], anomalies: any[]) {
 
 export async function GET() {
   try {
-    const healthData = generateHealthData()
-    const anomalies = detectAnomalies(healthData)
-    const recommendations = generateRecommendations(healthData, anomalies)
-
+    // This would typically fetch from a database
+    // For now, return a summary of available endpoints
     return NextResponse.json({
-      data: healthData,
-      anomalies,
-      recommendations,
-      summary: {
-        totalDataPoints: healthData.length,
-        anomaliesDetected: anomalies.length,
-        recommendationsGenerated: recommendations.length,
-        lastUpdated: new Date().toISOString(),
+      endpoints: {
+        realtime: "/api/health-data/realtime",
+        history: "/api/health-data/history",
+        alerts: "/api/health-data/alerts",
+        recommendations: "/api/health-data/recommendations",
+        export: "/api/health-data/export",
       },
+      status: "operational",
+      version: "1.0.0",
+      lastUpdated: new Date().toISOString(),
     })
   } catch (error) {
-    return NextResponse.json({ error: "Failed to generate health data" }, { status: 500 })
+    return NextResponse.json({ error: "Health data service unavailable" }, { status: 500 })
   }
 }
 

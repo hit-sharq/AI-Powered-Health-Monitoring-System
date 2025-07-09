@@ -2,14 +2,16 @@ import { NextResponse } from "next/server"
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   try {
-    const alertId = params.id
+    const { id } = params
 
-    // In a real application, this would update the database
-    // For now, we'll just simulate the acknowledgment
+    // In a real application, you would update the alert in your database
+    // For now, we'll simulate the acknowledgment
+    console.log(`Acknowledging alert: ${id}`)
 
     return NextResponse.json({
       success: true,
-      alertId,
+      message: "Alert acknowledged successfully",
+      alertId: id,
       acknowledgedAt: new Date().toISOString(),
     })
   } catch (error) {

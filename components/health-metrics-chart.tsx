@@ -1,63 +1,95 @@
 "use client"
 
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Legend } from "recharts"
 import { useEffect, useState } from "react"
 
 interface ChartData {
+  timestamp: string
   time: string
   heartRate: number
   bloodOxygen: number
-  temperature: number
+  bodyTemperature: number
+  activityLevel: number
 }
 
-export function HealthMetricsChart() {
+interface HealthMetricsChartProps {
+  data?: ChartData[]
+}
+
+export function HealthMetricsChart({ data: propData }: HealthMetricsChartProps) {
   const [data, setData] = useState<ChartData[]>([])
+  const [isLoading, setIsLoading] = useState(!propData)
 
   useEffect(() => {
-    // Initialize with some sample data
-    const initialData: ChartData[] = []
-    const now = new Date()
-
-    for (let i = 23; i >= 0; i--) {
-      const time = new Date(now.getTime() - i * 60 * 60 * 1000)
-      initialData.push({
-        time: time.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-        heartRate: 70 + Math.random() * 20,
-        bloodOxygen: 96 + Math.random() * 4,
-        temperature: 98 + Math.random() * 2,
-      })
+    if (propData) {
+      // Format the data for the chart
+      const formattedData = propData.map((item) => ({
+        ...item,
+        time: new Date(item.timestamp).toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }))
+      setData(formattedData)
+      setIsLoading(false)
+      return
     }
 
-    setData(initialData)
+    const fetchData = async () => {
+      try {
+        const response = await fetch("/api/health-data/history?range=24h")
+        const result = await response.json()
 
-    // Update data every 5 seconds
-    const interval = setInterval(() => {
-      setData((prev) => {
-        const newData = [...prev.slice(1)]
-        const now = new Date()
-        newData.push({
-          time: now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }),
-          heartRate: 70 + Math.random() * 20,
-          bloodOxygen: 96 + Math.random() * 4,
-          temperature: 98 + Math.random() * 2,
-        })
-        return newData
-      })
-    }, 5000)
+        const formattedData = result.data.map((item: any) => ({
+          ...item,
+          time: new Date(item.timestamp).toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        }))
 
-    return () => clearInterval(interval)
-  }, [])
+        setData(formattedData)
+      } catch (error) {
+        console.error("Failed to fetch chart data:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [propData])
+
+  if (isLoading) {
+    return (
+      <div className="h-[400px] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading health data...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="h-[400px] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-muted-foreground">No health data available</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={300}>
-      <LineChart data={data}>
-        <XAxis dataKey="time" fontSize={12} tickLine={false} axisLine={false} />
+    <ResponsiveContainer width="100%" height={400}>
+      <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <XAxis dataKey="time" fontSize={12} tickLine={false} axisLine={false} interval="preserveStartEnd" />
         <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${value}`} />
         <Tooltip
           content={({ active, payload, label }) => {
             if (active && payload && payload.length) {
               return (
-                <div className="rounded-lg border bg-background p-2 shadow-sm">
+                <div className="rounded-lg border bg-background p-3 shadow-sm">
                   <div className="grid grid-cols-1 gap-2">
                     <div className="flex flex-col">
                       <span className="text-[0.70rem] uppercase text-muted-foreground">Time</span>
@@ -70,11 +102,19 @@ export function HealthMetricsChart() {
                             ? "Heart Rate"
                             : entry.dataKey === "bloodOxygen"
                               ? "Blood Oxygen"
-                              : "Temperature"}
+                              : entry.dataKey === "bodyTemperature"
+                                ? "Temperature"
+                                : "Activity Level"}
                         </span>
                         <span className="font-bold" style={{ color: entry.color }}>
-                          {entry.value?.toFixed(1)}
-                          {entry.dataKey === "heartRate" ? " bpm" : entry.dataKey === "bloodOxygen" ? "%" : "°F"}
+                          {typeof entry.value === "number" ? entry.value.toFixed(1) : entry.value}
+                          {entry.dataKey === "heartRate"
+                            ? " bpm"
+                            : entry.dataKey === "bloodOxygen"
+                              ? "%"
+                              : entry.dataKey === "bodyTemperature"
+                                ? "°F"
+                                : " steps"}
                         </span>
                       </div>
                     ))}
@@ -85,9 +125,39 @@ export function HealthMetricsChart() {
             return null
           }}
         />
-        <Line type="monotone" dataKey="heartRate" stroke="#ef4444" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="bloodOxygen" stroke="#3b82f6" strokeWidth={2} dot={false} />
-        <Line type="monotone" dataKey="temperature" stroke="#f59e0b" strokeWidth={2} dot={false} />
+        <Legend />
+        <Line
+          type="monotone"
+          dataKey="heartRate"
+          stroke="#ef4444"
+          strokeWidth={2}
+          dot={false}
+          name="Heart Rate (bpm)"
+        />
+        <Line
+          type="monotone"
+          dataKey="bloodOxygen"
+          stroke="#3b82f6"
+          strokeWidth={2}
+          dot={false}
+          name="Blood Oxygen (%)"
+        />
+        <Line
+          type="monotone"
+          dataKey="bodyTemperature"
+          stroke="#f59e0b"
+          strokeWidth={2}
+          dot={false}
+          name="Temperature (°F)"
+        />
+        <Line
+          type="monotone"
+          dataKey="activityLevel"
+          stroke="#10b981"
+          strokeWidth={2}
+          dot={false}
+          name="Activity (steps/hr)"
+        />
       </LineChart>
     </ResponsiveContainer>
   )

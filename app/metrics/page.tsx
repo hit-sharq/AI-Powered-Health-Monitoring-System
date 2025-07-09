@@ -1,195 +1,204 @@
+"use client"
+
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Activity, Heart, Thermometer, Droplets, TrendingUp, TrendingDown } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { BarChart3, Download, RefreshCw } from "lucide-react"
+import { HealthMetricsChart } from "@/components/health-metrics-chart"
+import { useEffect, useState } from "react"
+
+interface HealthData {
+  timestamp: string
+  heartRate: number
+  bloodOxygen: number
+  bodyTemperature: number
+  activityLevel: number
+  stressLevel: number
+}
 
 export default function MetricsPage() {
-  const metrics = [
-    {
-      name: "Heart Rate",
-      current: 72,
-      unit: "bpm",
-      range: "60-100",
-      status: "normal",
-      trend: "stable",
-      icon: Heart,
-      history: [68, 70, 72, 74, 72, 71, 72],
-      color: "text-red-500",
-    },
-    {
-      name: "Blood Oxygen",
-      current: 98,
-      unit: "%",
-      range: "95-100",
-      status: "normal",
-      trend: "up",
-      icon: Droplets,
-      history: [96, 97, 97, 98, 98, 98, 98],
-      color: "text-blue-500",
-    },
-    {
-      name: "Body Temperature",
-      current: 98.6,
-      unit: "°F",
-      range: "97-99",
-      status: "normal",
-      trend: "stable",
-      icon: Thermometer,
-      history: [98.4, 98.5, 98.6, 98.7, 98.6, 98.5, 98.6],
-      color: "text-orange-500",
-    },
-    {
-      name: "Activity Level",
-      current: 7500,
-      unit: "steps",
-      range: "8000+",
-      status: "below",
-      trend: "down",
-      icon: Activity,
-      history: [8200, 7800, 7600, 7400, 7300, 7400, 7500],
-      color: "text-green-500",
-    },
-  ]
+  const [data, setData] = useState<HealthData[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [timeRange, setTimeRange] = useState("24h")
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "text-green-600 bg-green-100"
-      case "warning":
-        return "text-yellow-600 bg-yellow-100"
-      case "below":
-        return "text-orange-600 bg-orange-100"
-      case "critical":
-        return "text-red-600 bg-red-100"
-      default:
-        return "text-gray-600 bg-gray-100"
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/health-data/history?range=${timeRange}`)
+      const result = await response.json()
+      setData(result.data)
+    } catch (error) {
+      console.error("Failed to fetch health data:", error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const getTrendIcon = (trend: string) => {
-    switch (trend) {
-      case "up":
-        return <TrendingUp className="h-4 w-4 text-green-500" />
-      case "down":
-        return <TrendingDown className="h-4 w-4 text-red-500" />
-      default:
-        return <div className="h-4 w-4 rounded-full bg-gray-300" />
+  useEffect(() => {
+    fetchData()
+  }, [timeRange])
+
+  const exportData = async () => {
+    try {
+      const response = await fetch("/api/health-data/export")
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `health-data-${new Date().toISOString().split("T")[0]}.csv`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error("Failed to export data:", error)
     }
   }
+
+  const getAverages = () => {
+    if (data.length === 0) return null
+
+    return {
+      heartRate: Math.round(data.reduce((sum, d) => sum + d.heartRate, 0) / data.length),
+      bloodOxygen: Math.round(data.reduce((sum, d) => sum + d.bloodOxygen, 0) / data.length),
+      bodyTemperature: Math.round((data.reduce((sum, d) => sum + d.bodyTemperature, 0) / data.length) * 10) / 10,
+      activityLevel: Math.round(data.reduce((sum, d) => sum + d.activityLevel, 0) / data.length),
+      stressLevel: Math.round(data.reduce((sum, d) => sum + d.stressLevel, 0) / data.length),
+    }
+  }
+
+  const averages = getAverages()
 
   return (
     <div className="flex flex-col min-h-screen">
       <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
         <SidebarTrigger />
-        <h1 className="text-xl font-semibold">Health Metrics</h1>
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            <h1 className="text-xl font-semibold">Health Metrics</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="24h">Last 24h</SelectItem>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
+            </Button>
+            <Button variant="outline" size="sm" onClick={exportData}>
+              <Download className="h-4 w-4" />
+              Export
+            </Button>
+          </div>
+        </div>
       </header>
 
       <main className="flex-1 p-6 space-y-6">
-        <div className="grid gap-6 md:grid-cols-2">
-          {metrics.map((metric) => {
-            const Icon = metric.icon
-            const progressValue =
-              metric.name === "Activity Level"
-                ? (metric.current / 10000) * 100
-                : metric.name === "Blood Oxygen"
-                  ? ((metric.current - 90) / 10) * 100
-                  : metric.name === "Heart Rate"
-                    ? ((metric.current - 40) / 60) * 100
-                    : ((metric.current - 95) / 5) * 100
+        {/* Summary Cards */}
+        {averages && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Heart Rate</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{averages.heartRate} bpm</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Blood Oxygen</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{averages.bloodOxygen}%</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Temperature</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{averages.bodyTemperature}°F</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Daily Steps</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{averages.activityLevel.toLocaleString()}</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Stress Level</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{averages.stressLevel}/10</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-            return (
-              <Card key={metric.name}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-5 w-5 ${metric.color}`} />
-                      <CardTitle className="text-lg">{metric.name}</CardTitle>
-                    </div>
-                    {getTrendIcon(metric.trend)}
-                  </div>
-                  <CardDescription>
-                    Normal range: {metric.range} {metric.unit}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold">
-                      {metric.current} {metric.unit}
-                    </div>
-                    <Badge className={getStatusColor(metric.status)}>{metric.status}</Badge>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span>Progress</span>
-                      <span>{Math.round(progressValue)}%</span>
-                    </div>
-                    <Progress value={progressValue} className="h-2" />
-                  </div>
-
-                  <div className="space-y-2">
-                    <h4 className="text-sm font-medium">7-Day Trend</h4>
-                    <div className="flex items-end gap-1 h-16">
-                      {metric.history.map((value, index) => {
-                        const height =
-                          metric.name === "Activity Level"
-                            ? (value / Math.max(...metric.history)) * 100
-                            : ((value - Math.min(...metric.history)) /
-                                (Math.max(...metric.history) - Math.min(...metric.history))) *
-                              100
-
-                        return (
-                          <div
-                            key={index}
-                            className={`flex-1 bg-gradient-to-t from-blue-500 to-blue-300 rounded-sm opacity-70 hover:opacity-100 transition-opacity`}
-                            style={{ height: `${height}%` }}
-                            title={`Day ${index + 1}: ${value} ${metric.unit}`}
-                          />
-                        )
-                      })}
-                    </div>
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>7 days ago</span>
-                      <span>Today</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-
-        {/* Detailed Analysis */}
+        {/* Detailed Chart */}
         <Card>
           <CardHeader>
-            <CardTitle>AI Analysis Summary</CardTitle>
-            <CardDescription>Machine learning insights based on your health patterns</CardDescription>
+            <CardTitle>Health Trends</CardTitle>
+            <CardDescription>Detailed view of your health metrics over time ({timeRange})</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
+            {isLoading ? (
+              <div className="h-[400px] flex items-center justify-center">
+                <div className="text-center">
+                  <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-2" />
+                  <p>Loading health data...</p>
+                </div>
+              </div>
+            ) : (
+              <HealthMetricsChart data={data} />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Data Quality Indicators */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Quality</CardTitle>
+            <CardDescription>Information about your health data collection</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="p-4 rounded-lg bg-green-50 border border-green-200">
-                <h4 className="font-medium text-green-800">Cardiovascular Health</h4>
-                <p className="text-sm text-green-700 mt-1">
-                  Your heart rate patterns show good cardiovascular fitness with stable resting heart rate.
-                </p>
-                <Badge className="mt-2 bg-green-100 text-green-800">Excellent</Badge>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Data Points Collected</p>
+                <p className="text-2xl font-bold">{data.length}</p>
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Complete
+                </Badge>
               </div>
-
-              <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
-                <h4 className="font-medium text-blue-800">Respiratory Function</h4>
-                <p className="text-sm text-blue-700 mt-1">
-                  Blood oxygen levels are consistently optimal, indicating healthy lung function.
-                </p>
-                <Badge className="mt-2 bg-blue-100 text-blue-800">Normal</Badge>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Collection Period</p>
+                <p className="text-2xl font-bold">{timeRange}</p>
+                <Badge variant="outline" className="text-blue-600 border-blue-600">
+                  Active
+                </Badge>
               </div>
-
-              <div className="p-4 rounded-lg bg-orange-50 border border-orange-200">
-                <h4 className="font-medium text-orange-800">Activity Patterns</h4>
-                <p className="text-sm text-orange-700 mt-1">
-                  Daily activity is slightly below recommended levels. Consider increasing movement.
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Last Updated</p>
+                <p className="text-sm text-muted-foreground">
+                  {data.length > 0 ? new Date(data[data.length - 1].timestamp).toLocaleString() : "No data"}
                 </p>
-                <Badge className="mt-2 bg-orange-100 text-orange-800">Needs Improvement</Badge>
+                <Badge variant="outline" className="text-green-600 border-green-600">
+                  Real-time
+                </Badge>
               </div>
             </div>
           </CardContent>

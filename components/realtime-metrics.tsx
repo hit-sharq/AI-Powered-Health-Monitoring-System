@@ -1,138 +1,149 @@
 "use client"
 
-import type React from "react"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Heart, Activity, Thermometer, Droplets } from "lucide-react"
+import { Heart, Droplets, Thermometer, Activity } from "lucide-react"
 import { useEffect, useState } from "react"
 
-interface HealthMetric {
-  id: string
-  name: string
-  value: number
-  unit: string
-  status: "normal" | "warning" | "critical"
-  icon: React.ComponentType<{ className?: string }>
-  range: string
+interface HealthMetrics {
+  heartRate: number
+  bloodOxygen: number
+  bodyTemperature: number
+  activityLevel: number
+  timestamp: string
 }
 
 export function RealtimeMetrics() {
-  const [metrics, setMetrics] = useState<HealthMetric[]>([
-    {
-      id: "heart-rate",
-      name: "Heart Rate",
-      value: 72,
-      unit: "bpm",
-      status: "normal",
-      icon: Heart,
-      range: "60-100 bpm",
-    },
-    {
-      id: "blood-oxygen",
-      name: "Blood Oxygen",
-      value: 98,
-      unit: "%",
-      status: "normal",
-      icon: Droplets,
-      range: "95-100%",
-    },
-    {
-      id: "body-temp",
-      name: "Body Temperature",
-      value: 98.6,
-      unit: "°F",
-      status: "normal",
-      icon: Thermometer,
-      range: "97-99°F",
-    },
-    {
-      id: "activity",
-      name: "Activity Level",
-      value: 7500,
-      unit: "steps",
-      status: "normal",
-      icon: Activity,
-      range: "8000+ steps",
-    },
-  ])
+  const [metrics, setMetrics] = useState<HealthMetrics | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMetrics((prev) =>
-        prev.map((metric) => {
-          let newValue = metric.value
-          let newStatus = metric.status
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch("/api/health-data/realtime")
+        const data = await response.json()
+        setMetrics(data.currentMetrics)
+        setIsLoading(false)
+      } catch (error) {
+        console.error("Failed to fetch metrics:", error)
+        setIsLoading(false)
+      }
+    }
 
-          // Simulate real-time data changes
-          switch (metric.id) {
-            case "heart-rate":
-              newValue = Math.max(60, Math.min(100, metric.value + (Math.random() - 0.5) * 4))
-              newStatus = newValue > 90 || newValue < 65 ? "warning" : "normal"
-              break
-            case "blood-oxygen":
-              newValue = Math.max(90, Math.min(100, metric.value + (Math.random() - 0.5) * 2))
-              newStatus = newValue < 95 ? "critical" : "normal"
-              break
-            case "body-temp":
-              newValue = Math.max(96, Math.min(101, metric.value + (Math.random() - 0.5) * 0.5))
-              newStatus = newValue > 99.5 || newValue < 97 ? "warning" : "normal"
-              break
-            case "activity":
-              newValue = Math.max(0, metric.value + Math.floor((Math.random() - 0.3) * 100))
-              newStatus = newValue < 5000 ? "warning" : "normal"
-              break
-          }
-
-          return {
-            ...metric,
-            value: Math.round(newValue * 10) / 10,
-            status: newStatus,
-          }
-        }),
-      )
-    }, 3000)
+    fetchMetrics()
+    const interval = setInterval(fetchMetrics, 5000) // Update every 5 seconds
 
     return () => clearInterval(interval)
   }, [])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "normal":
-        return "text-green-600 border-green-600"
-      case "warning":
-        return "text-yellow-600 border-yellow-600"
-      case "critical":
-        return "text-red-600 border-red-600"
-      default:
-        return "text-gray-600 border-gray-600"
-    }
+  const getHeartRateStatus = (hr: number) => {
+    if (hr < 60) return { status: "Low", color: "text-blue-600 border-blue-600" }
+    if (hr > 100) return { status: "High", color: "text-red-600 border-red-600" }
+    return { status: "Normal", color: "text-green-600 border-green-600" }
   }
+
+  const getOxygenStatus = (oxygen: number) => {
+    if (oxygen < 95) return { status: "Low", color: "text-red-600 border-red-600" }
+    if (oxygen >= 98) return { status: "Excellent", color: "text-green-600 border-green-600" }
+    return { status: "Good", color: "text-yellow-600 border-yellow-600" }
+  }
+
+  const getTempStatus = (temp: number) => {
+    if (temp < 97 || temp > 99.5) return { status: "Abnormal", color: "text-red-600 border-red-600" }
+    return { status: "Normal", color: "text-green-600 border-green-600" }
+  }
+
+  const getActivityStatus = (steps: number) => {
+    if (steps < 5000) return { status: "Low", color: "text-red-600 border-red-600" }
+    if (steps > 10000) return { status: "Excellent", color: "text-green-600 border-green-600" }
+    return { status: "Good", color: "text-yellow-600 border-yellow-600" }
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+            </CardContent>
+          </Card>
+        ))}
+      </>
+    )
+  }
+
+  if (!metrics) {
+    return (
+      <Card className="col-span-4">
+        <CardContent className="p-6">
+          <p className="text-center text-muted-foreground">Failed to load health metrics</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const heartRateStatus = getHeartRateStatus(metrics.heartRate)
+  const oxygenStatus = getOxygenStatus(metrics.bloodOxygen)
+  const tempStatus = getTempStatus(metrics.bodyTemperature)
+  const activityStatus = getActivityStatus(metrics.activityLevel)
 
   return (
     <>
-      {metrics.map((metric) => {
-        const Icon = metric.icon
-        return (
-          <Card key={metric.id}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{metric.name}</CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {metric.value} {metric.unit}
-              </div>
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-muted-foreground">Normal: {metric.range}</p>
-                <Badge variant="outline" className={getStatusColor(metric.status)}>
-                  {metric.status}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-        )
-      })}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Heart Rate</CardTitle>
+          <Heart className="h-4 w-4 text-red-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{metrics.heartRate} bpm</div>
+          <Badge variant="outline" className={heartRateStatus.color}>
+            {heartRateStatus.status}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Blood Oxygen</CardTitle>
+          <Droplets className="h-4 w-4 text-blue-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{metrics.bloodOxygen}%</div>
+          <Badge variant="outline" className={oxygenStatus.color}>
+            {oxygenStatus.status}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Body Temperature</CardTitle>
+          <Thermometer className="h-4 w-4 text-orange-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{metrics.bodyTemperature}°F</div>
+          <Badge variant="outline" className={tempStatus.color}>
+            {tempStatus.status}
+          </Badge>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Daily Steps</CardTitle>
+          <Activity className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{metrics.activityLevel.toLocaleString()}</div>
+          <Badge variant="outline" className={activityStatus.color}>
+            {activityStatus.status}
+          </Badge>
+        </CardContent>
+      </Card>
     </>
   )
 }

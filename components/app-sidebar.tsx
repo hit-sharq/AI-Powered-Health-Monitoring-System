@@ -1,4 +1,7 @@
-import { Activity, AlertTriangle, BarChart3, Heart, Home, Settings, TrendingUp, User } from "lucide-react"
+"use client"
+
+import type * as React from "react"
+import { AlertTriangle, BarChart3, Heart, Home, Lightbulb, Settings, User } from "lucide-react"
 
 import {
   Sidebar,
@@ -11,10 +14,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from "@/components/ui/sidebar"
-import Link from "next/link"
 
-const menuItems = [
+// Navigation items
+const items = [
   {
     title: "Dashboard",
     url: "/",
@@ -23,7 +27,7 @@ const menuItems = [
   {
     title: "Health Metrics",
     url: "/metrics",
-    icon: Activity,
+    icon: BarChart3,
   },
   {
     title: "Anomaly Alerts",
@@ -33,17 +37,7 @@ const menuItems = [
   {
     title: "Recommendations",
     url: "/recommendations",
-    icon: TrendingUp,
-  },
-  {
-    title: "Analytics",
-    url: "/analytics",
-    icon: BarChart3,
-  },
-  {
-    title: "Profile",
-    url: "/profile",
-    icon: User,
+    icon: Lightbulb,
   },
   {
     title: "Settings",
@@ -52,14 +46,14 @@ const menuItems = [
   },
 ]
 
-export function AppSidebar() {
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
-    <Sidebar>
-      <SidebarHeader className="border-b">
-        <div className="flex items-center gap-2 px-2 py-2">
+    <Sidebar variant="inset" {...props}>
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-4 py-2">
           <Heart className="h-6 w-6 text-red-500" />
           <div>
-            <h2 className="text-lg font-semibold">HealthGuard AI</h2>
+            <h2 className="text-lg font-semibold">HealthAI</h2>
             <p className="text-xs text-muted-foreground">Smart Health Monitoring</p>
           </div>
         </div>
@@ -69,13 +63,13 @@ export function AppSidebar() {
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link href={item.url}>
+                    <a href={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </Link>
+                    </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -83,12 +77,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t">
-        <div className="p-2 text-xs text-muted-foreground">
-          <p>SDG 3: Good Health and Well-being</p>
-          <p>Powered by AI & ML</p>
-        </div>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton>
+              <User />
+              <span>Profile</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }

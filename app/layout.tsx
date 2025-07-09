@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description:
     "AI-powered health monitoring system for real-time health tracking, anomaly detection, and personalized recommendations",
   keywords: ["health monitoring", "AI", "SDG 3", "health analytics", "wearable devices"],
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
           <SidebarProvider>
             <div className="flex min-h-screen w-full">
               <AppSidebar />
-              <main className="flex-1">{children}</main>
+              <main className="flex-1 overflow-hidden">{children}</main>
             </div>
           </SidebarProvider>
           <Toaster />

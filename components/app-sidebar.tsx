@@ -1,9 +1,17 @@
 "use client"
 
-import type React from "react"
-
-import { Home, Inbox, Search, Settings, Heart, Activity, AlertTriangle, Lightbulb, BarChart3, User } from "lucide-react"
-
+import {
+  AlertTriangle,
+  BarChart3,
+  Heart,
+  Home,
+  Lightbulb,
+  Settings,
+  User,
+  Activity,
+  Inbox,
+  HelpCircle,
+} from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,40 +23,33 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  SidebarRail,
 } from "@/components/ui/sidebar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
-// Navigation items
-const navigationItems = [
+const healthTools = [
   {
     title: "Dashboard",
     url: "/",
     icon: Home,
-    badge: null,
   },
   {
     title: "Health Metrics",
     url: "/metrics",
     icon: BarChart3,
-    badge: null,
   },
   {
-    title: "Anomaly Alerts",
+    title: "Alerts",
     url: "/alerts",
     icon: AlertTriangle,
-    badge: "2",
   },
   {
     title: "Recommendations",
     url: "/recommendations",
     icon: Lightbulb,
-    badge: null,
   },
 ]
 
-const healthTools = [
+const tools = [
   {
     title: "Heart Rate Monitor",
     url: "/tools/heart-rate",
@@ -68,6 +69,11 @@ const healthTools = [
 
 const systemItems = [
   {
+    title: "Profile",
+    url: "/profile",
+    icon: User,
+  },
+  {
     title: "Settings",
     url: "/settings",
     icon: Settings,
@@ -75,63 +81,35 @@ const systemItems = [
   {
     title: "Help & Support",
     url: "/help",
-    icon: Search,
+    icon: HelpCircle,
   },
 ]
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function AppSidebar() {
   return (
-    <Sidebar {...props}>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-2">
+    <Sidebar>
+      <SidebarHeader className="p-4">
+        <div className="flex items-center gap-2">
           <Heart className="h-6 w-6 text-red-500" />
           <div>
-            <h2 className="text-lg font-semibold">HealthMonitor</h2>
-            <p className="text-xs text-muted-foreground">AI-Powered Health System</p>
+            <h2 className="font-semibold">HealthMonitor</h2>
+            <p className="text-xs text-muted-foreground">AI-Powered Health Tracking</p>
           </div>
         </div>
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                      {item.badge && (
-                        <Badge
-                          variant="destructive"
-                          className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
-                        >
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Health Tools */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Health Tools</SidebarGroupLabel>
+          <SidebarGroupLabel>Health Dashboard</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {healthTools.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -139,7 +117,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* System */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Health Tools</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {tools.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link href={item.url}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
         <SidebarGroup>
           <SidebarGroupLabel>System</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -147,10 +142,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               {systemItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url} className="flex items-center gap-2">
+                    <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -159,22 +154,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
-        <div className="flex items-center gap-2 px-2 py-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/placeholder-user.jpg" alt="User" />
-            <AvatarFallback>
-              <User className="h-4 w-4" />
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Health User</p>
-            <p className="text-xs text-muted-foreground truncate">user@health.com</p>
-          </div>
+      <SidebarFooter className="p-4">
+        <div className="text-xs text-muted-foreground">
+          <p>SDG 3: Good Health & Well-being</p>
+          <p className="mt-1">Promoting healthy lives for all</p>
         </div>
       </SidebarFooter>
-
-      <SidebarRail />
     </Sidebar>
   )
 }
